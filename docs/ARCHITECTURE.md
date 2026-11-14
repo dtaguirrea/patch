@@ -13,15 +13,15 @@ PATCH is designed as a modular Python monolith with a Streamlit interface, a SQL
 | [`config_scenarios.py`](../config_scenarios.py) | Defines fictional profiles, prior telemetry, timed events, checks, and reference data for scenarios A and B. The clinical lead reviews the illustrative rules. |
 | [`core_hsm.py`](../core_hsm.py) | Processes events, applies transition rules, tracks changes to the episode state, and determines which actions each state allows. |
 | [`space_link_db.py`](../space_link_db.py) | Manages SQLite transactions, the mission clock, the persistent record, and delayed message delivery in both directions. |
-| [`llm_anamnesis.py`](../llm_anamnesis.py) | Wraps optional inference, validates proposals, checks whether they still apply, and supplies predefined questions when inference fails or is disabled. |
+| [`llm_anamnesis.py`](../llm_anamnesis.py) | Wraps optional inference, validates assessment turns and their evidence, checks whether proposed actions still apply, and supplies predefined questions when inference fails or is disabled. |
 
 ## Episode flow
 
 1. Manual activation or a telemetry alert opens an episode. PATCH retains up to one hour of available prior data with its original timestamps and sources. The same operation records the activation and queues an `INITIAL_ALERT` with the information available at that moment, before the interview begins.
 2. The HSM records the reason for activation and the initial check of consciousness and breathing. Unknown or ambiguous essential information triggers a guided reassessment. A lost signal is recorded as uncertainty.
-3. The stable path allows a text-based medical history interview. The critical path activates predefined scenario steps and suspends open-ended questions. A confirmed critical event takes priority during any active assessment.
-4. PATCH records findings and state changes, which can trigger updates to Earth. The SBAR summary (Situation, Background, Assessment, and Recommendation) uses recorded data and its sources and marks unknown fields explicitly.
-5. The episode ends with a documented closure. The `report_ready` flag indicates that a handoff report is available while monitoring and state transitions continue.
+3. The stable path allows an adaptive text interview and scenario-approved measurements or exam checks. The critical path activates predefined scenario steps and suspends the interview. A confirmed critical event takes priority during any active assessment.
+4. PATCH records findings and state changes, which can trigger updates to Earth. The Earth-facing summary includes findings with their sources, recorded measurements and examination results, pertinent negatives, unresolved hypotheses, and outstanding gaps. It retains the SBAR structure (Situation, Background, Assessment, and Recommendation).
+5. Once the controller authorizes a handoff, the `report_ready` flag indicates that a report is available while monitoring and state transitions continue. The episode ends with a documented closure.
 
 ```mermaid
 flowchart TD
@@ -46,10 +46,10 @@ Leaving `CRITICAL` requires new documented evidence and an explicit transition r
 | `TelemetrySample` | Records the metric, available value, unit, source, quality, and observation time in MET. A missing signal is flagged and its value is left empty. |
 | `ClinicalEvent` | Immutable event with a unique ID, episode, type, source, MET, and associated data. |
 | `ProtocolState` | Records the episode state, its revision counter, the time it changed, and the event that prompted the change. |
-| `ClinicalSlot` | Structured finding with evidence, provenance, and a revision counter. Status values are `present`, `denied`, `unknown`, and `not_assessed`. |
-| `LLMProposal` | Proposes updates to allowed fields, an interview goal, a base question, and an action from the catalog when applicable. |
+| `ClinicalFinding` | Open-vocabulary description with a controlled category and source, evidence, an originating patient turn or record reference, and a revision counter. Status values are `present`, `denied`, `unknown`, and `not_assessed`. |
+| `ClinicalAssessmentTurn` | Captures the current problem summary, new findings, working hypotheses, open uncertainties, a proposed next action with a brief rationale, and the model's declaration of assessment sufficiency. |
 | `MedicalMessage` | Records the ID, direction, type, source state revision, payload captured at creation, and MET timestamps for sending, scheduled delivery, and actual delivery. |
-| `EpisodeSummary` | Uses findings, measurements, and the episode timeline to prepare the SBAR. |
+| `EpisodeSummary` | Carries open-vocabulary findings, vital measurements, physical examination findings, pertinent negatives, unresolved hypotheses, uncertainties, missing information, pending assessments, the episode timeline, and structured SBAR. |
 
 See [`contracts.py`](../contracts.py) for the field definitions.
 
@@ -68,13 +68,21 @@ With an available link and a **12-minute delay in each direction**, scenario B f
 | `CRITICAL_UPDATE` | Spacecraft → Earth | T+03 | T+15 |
 | `ACK` or `CONDITIONAL_REQUEST` | Earth → Spacecraft | T+12 | T+24 |
 
-## Assisted medical history interview
+## Adaptive clinical assessment
 
-The HSM enables the interview in `STABLE_ASSESSMENT`. MedGemma receives the minimum context it needs through an Ollama adapter and returns an `LLMProposal`. Pydantic validates the proposal structure, fields, and allowed values. The HSM verifies that the proposed action is permitted. PATCH records only validated updates, along with their evidence and provenance.
+The HSM enables the assessment in `STABLE_ASSESSMENT`. MedGemma receives relevant patient responses and recorded observations through an Ollama adapter. It can read telemetry and suggest measurements. Sensor control stays with the simulator. The `ClinicalAssessmentTurn` updates the problem summary, findings, working hypotheses, and uncertainties as information becomes available.
 
-Qwen is optional and receives only the approved base question and style constraints. If the simulator cannot verify that the paraphrase preserves the meaning, the interface shows the base question. If MedGemma fails or the simulator runs without models, the interview uses predefined scenario questions. Both scenarios must be runnable end to end in that mode.
+| Proposed action | Data carried by the turn |
+| --- | --- |
+| `ask` | A base question for the next patient turn. |
+| `examine` | A plan with one or more measurements or examination items from the approved catalog. |
+| `handoff_ready` | A declaration that the assessment has enough information to propose a handoff. |
 
-Before each inference call, PATCH captures the episode ID and state revision. Before applying updates or displaying a question, it checks that both still match and that the HSM still permits the action. It discards and logs stale output. These checks protect how PATCH uses the response, including when inference calls are blocking.
+Each action includes a brief rationale. Pydantic validates the fields and action-specific requirements. Before accepting a finding, the adapter must check its references against the current episode's trusted sources and verify any patient quote against the referenced text. These checks establish provenance. Clinical interpretation requires separate review. Working hypotheses stay distinct from patient reports and measured observations.
+
+Before each inference call, PATCH captures the episode ID and state revision. Before applying findings or acting on the proposal, the controller checks that both still match and that the HSM authorizes the action. A handoff proposal also requires external safety and consistency checks. The HSM retains control over safety transitions and can interrupt an active assessment after a critical event. PATCH discards and logs stale output, including responses from blocking inference calls.
+
+Qwen is optional and receives only the approved base question for an `ask` action and style constraints. If the simulator cannot verify that the paraphrase preserves the meaning, the interface shows the base question. If MedGemma fails or the simulator runs without models, the interview uses predefined scenario questions. Both scenarios must be runnable end to end in that mode.
 
 ## Simulator views
 
@@ -92,5 +100,6 @@ Before each inference call, PATCH captures the episode ID and state revision. Be
 | B · Deterioration at T+03 | The HSM moves to `CRITICAL`, invalidates the previous question, and Earth receives the update at T+15. The request sent at T+12 is reassessed on arrival at T+24. |
 | Retried command or interface restart | A retried command has a single effect. Restarting the interface restores the persisted state, clock, and message queue. |
 | Failed inference or invalid output | The core continues processing the clock and events. During a stable interview, the interface uses the base question or a predefined question, depending on the model that failed. |
+| New finding or proposed action | A new description is accepted with a valid category and source. An unsupported quote or an exam item outside the catalog is rejected. The HSM authorizes the next action. |
 
 Detailed scripts will go in [`SCENARIOS.md`](SCENARIOS.md) and runtime measurements in [`RESULTS.md`](RESULTS.md).
