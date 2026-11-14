@@ -1,52 +1,56 @@
 # PATCH
 
-**PATCH (Protocol-Assisted Triage, Communication & Handoff)** será un simulador
-de episodios de salud durante una misión a Marte. Usará datos ficticios y
-modelará la comunicación demorada entre la Nave y Tierra. El proyecto está en
-etapa de estructura inicial; la implementación se realizará posteriormente con
-Python 3.11, Streamlit, SQLite, Pydantic y pytest.
+**PATCH (Protocol-Assisted Triage, Communication & Handoff)** will simulate
+health episodes during a mission to Mars. It will use fictional data and model
+delayed communication between the spacecraft and Earth. The repository is
+currently a scaffold. The planned implementation uses Python 3.11, Streamlit,
+SQLite, Pydantic, and pytest.
 
-## Módulos
+## Modules
 
-- `app.py`: interfaz de usuario y punto de entrada de la aplicación Streamlit.
-- `contracts.py`: contratos, modelos de datos y validaciones compartidas.
-- `config_scenarios.py`: configuración de los escenarios y sus datos ficticios.
-- `core_hsm.py`: máquina de estados y lógica de progresión de los episodios.
-- `space_link_db.py`: persistencia SQLite y cola de mensajes entre Nave y Tierra.
-- `llm_anamnesis.py`: futura integración para apoyar la entrevista de anamnesis.
+| File | Planned responsibility |
+| --- | --- |
+| `app.py` | Streamlit entry point and user interface. |
+| `contracts.py` | Shared contracts, data models, and validation. |
+| `config_scenarios.py` | Scenario configuration and fictional data. |
+| `core_hsm.py` | State machine and episode progression. |
+| `space_link_db.py` | SQLite persistence and the message queue between the spacecraft and Earth. |
+| `llm_anamnesis.py` | Optional language model integration for taking a medical history. |
 
-## Escenarios previstos
+See the [architecture document](docs/ARCHITECTURE.md) for the planned design.
 
-- **A — Entrevista durante el retraso de comunicaciones:** la Nave realiza una
-  entrevista mientras los mensajes esperan el enlace demorado.
-- **B — Deterioro simulado y aviso diferido a Tierra:** la condición simulada
-  empeora y la notificación llega a Tierra después del retraso.
+## Planned scenarios
 
-Ambos escenarios son trabajo futuro y todavía no están implementados.
+- **A — Interview during a communication delay.** The crew conducts a medical
+  history interview while messages are in transit to Earth.
+- **B — Simulated deterioration and delayed notification to Earth.** The
+  simulated condition worsens, and Earth receives the update after the
+  configured delay.
 
-## Cómo trabajamos en Git
+Both scenarios are planned for implementation.
 
-El flujo de trabajo es **rama de trabajo → `dev` → `main`**:
+## Git workflow
 
-1. `dev` es la rama de integración. Cada tarea comienza desde `dev` actualizado
-   en una rama propia, como `feat/hsm`, `fix/cola-mensajes` o
-   `docs/escenarios`.
-2. Al terminar una tarea, publica su rama y abre un pull request con base
-   `dev` y compare la rama de trabajo. El PR debe indicar qué cambió y cómo se
-   revisó.
-3. Cuando `dev` esté listo para una entrega, abre un pull request con base
-   `main` y compare `dev`. `main` contiene las versiones estables. Las
-   integraciones a `dev` y `main` se hacen por PR.
+Changes move from a working branch to `dev`, then to `main`.
 
-Comandos habituales:
+1. `dev` is the integration branch. Start each task on a new branch from the
+   latest `dev`, for example `feat/hsm`, `fix/message-queue`, or `docs/scenarios`.
+2. When the task is ready, push your branch and open a pull request with `dev`
+   as the **base** and your working branch as the **compare** branch. Describe
+   what changed and how you verified it.
+3. When `dev` is ready for a release, open a pull request with `main` as the
+   **base** and `dev` as the **compare** branch. `main` holds stable releases.
+   Both `dev` and `main` receive changes through pull requests.
+
+Use these commands to start and publish a working branch.
 
 ```bash
 git switch dev
 git pull --ff-only origin dev
-git switch -c feat/mi-tarea
-# ... realizar y revisar cambios ...
-git push -u origin feat/mi-tarea
+git switch -c feat/my-task
+# ... make and review your changes ...
+git push -u origin feat/my-task
 ```
 
-Para esta entrega, el primer pull request debe usar `dev` como **base** y la
-rama de trabajo publicada como **compare**.
+For this submission, the first pull request should use `dev` as the **base**
+and the published working branch as the **compare** branch.
