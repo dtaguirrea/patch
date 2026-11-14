@@ -48,6 +48,5 @@ git switch -c feat/mi-tarea
 git push -u origin feat/mi-tarea
 ```
 
-La rama de trabajo de este esqueleto es `chore/bootstrap`, creada desde
-`dev`. El primer pull request debe usar `dev` como **base** y
-`chore/bootstrap` como **compare**.
+Para esta entrega, el primer pull request debe usar `dev` como **base** y la
+rama de trabajo publicada como **compare**.
