@@ -1,25 +1,23 @@
-# Entornos virtuales
+# Virtual environments
 .venv/
 venv/
 env/
 
-# Cachés de Python y pytest
+# Python caches
 __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Bases de datos SQLite locales
+# Local SQLite state
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+data/
 
-# Variables de entorno
+# Environment variables and runtime logs
 .env
 .env.*
 !.env.example
-
-# Estado de ejecución y archivos temporales
-data/
-*.sqlite3-wal
-*.sqlite3-shm
 *.log

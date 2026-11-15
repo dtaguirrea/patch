@@ -1,0 +1,101 @@
+{
+  "case_id": "C02",
+  "title": "Severe left flank pain",
+  "recorded_model": "google/medgemma-27b-text-it",
+  "source_file": "patch_case_natural_1794755693492205675.json",
+  "source_sha256": "aace074501806f0041960f54f0e2b1faebd25d4674aa243b84850478f83efc9f",
+  "opening": "I've got a really bad pain in my left side, near my back",
+  "original_context": {
+    "CREW_RECORD": {},
+    "MISSION_CONTEXT": "Mars transit",
+    "MEASUREMENTS": [],
+    "EXAM_CATALOG": [
+      "Pulse",
+      "Blood pressure",
+      "Oxygen saturation",
+      "Respiratory rate",
+      "Temperature"
+    ]
+  },
+  "steps": [
+    {
+      "phase": "HISTORY",
+      "question": "Okay, I understand. Let's start gathering information.\n\nWhen did this pain begin?",
+      "answer": "It began suddenly about ninety minutes ago.",
+      "source_dialogue_index": 2,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Can you describe the pain? Is it sharp, dull, cramping, or something else?",
+      "answer": "It comes in strong waves, with short periods when it eases a little.",
+      "source_dialogue_index": 4,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Where exactly is the pain located? Can you point to the most painful spot?",
+      "answer": "It's in my left flank, between my ribs and hip",
+      "source_dialogue_index": 6,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Does the pain radiate anywhere else, like to your shoulder, groin, or abdomen?",
+      "answer": "Sometimes it moves toward my lower abdomen and groin",
+      "source_dialogue_index": 8,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Have you noticed any changes in your urine, like blood, pain when urinating, or changes in frequency?",
+      "answer": "I noticed that my urine looked slightly pink earlier today, I haven't noticed unusual urgency or frequency. No pain",
+      "source_dialogue_index": 10,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Have you experienced any nausea, vomiting, fever, or chills?",
+      "answer": "I haven't felt feverish and haven't had chills.",
+      "source_dialogue_index": 12,
+      "observations": []
+    },
+    {
+      "phase": "VITALS",
+      "question": "Can you provide the current heart rate and oxygen saturation?",
+      "answer": "108 bpm and  \t\n98%",
+      "source_dialogue_index": 14,
+      "observations": [
+        {
+          "metric": "pulse",
+          "value": 108,
+          "unit": "bpm"
+        },
+        {
+          "metric": "spo2",
+          "value": 98,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "phase": "EXAM",
+      "question": "Can you perform a focused abdominal examination, paying attention to tenderness in the left flank and lower abdomen?",
+      "answer": "An assisting crewmate reports left costovertebral-area tenderness; the examination is limited.  No clearly localized anterior abdominal tenderness has been documented.",
+      "source_dialogue_index": 16,
+      "observations": [
+        {
+          "metric": "abdomen",
+          "value": "An assisting crewmate reports left costovertebral-area tenderness; the examination is limited.  No clearly localized anterior abdominal tenderness has been documented.",
+          "unit": "description"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Verbatim replay of an exported conversation; no live inference.",
+    "The attachment supplies no demographics, initial safety checks or measurement times.",
+    "The original abdominal request is absent from EXAM_CATALOG: it is replayed as a historical crewmate report, not as an approved clinical procedure.",
+    "The notebook-generated report is not used as evidence; it may contain inferences or inconsistencies."
+  ]
+}

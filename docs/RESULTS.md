@@ -1,18 +1,21 @@
-# Estado de ejecución y alcance de revisión
+# Implementation review
 
-Fecha de entrega: 14-11-2026, zona America/Santiago.
+This project has no added tests or executed test suites, as requested. The checks described here are manual application-command walkthroughs, syntax compilation and startup inspection. They do not establish clinical validity, exhaustive correctness or a complete browser review on the user's computer.
 
-No se crearon ni ejecutaron suites de tests. Se revisó la sintaxis de los módulos, se arrancó Streamlit y se recorrieron manualmente comandos de la aplicación con datos ficticios en una base temporal excluida de la entrega.
+## Previously observed behavior
 
-| Recorrido manual | Resultado observado |
-|---|---|
-| Arranque Streamlit | Endpoint de salud HTTP 200, `ok` |
-| N02 | Snapshot inicial de 122 muestras; chequeo explícito, conversación mock y PA 108/70; alerta e informe enviados en T0 recibidos en T+15 min |
-| N04 | Evento T+2 cambia a CRITICAL y bloquea entrevista; INITIAL_ALERT recibido en T+22 min y CRITICAL_UPDATE en T+24 min |
-| N06 | Informes creados en T+25 min y T+6 h 10 min, enviados ambos en T+7 h y recibidos en T+7 h 15 min |
-| Fuente de temperatura N06 | 39,1 °C registrada como `crew_reported` |
-| Persistencia | Los tres episodios permanecían al cerrar y reabrir SQLite |
+The original MVP started with an HTTP 200 health endpoint. N02 delivered an alert and handoff sent at T0 at T+15 minutes. N04 entered CRITICAL at T+2, blocked interview and delivered INITIAL_ALERT at T+22 and CRITICAL_UPDATE at T+24. N06 queued handoffs created during the outage, sent both at T+7 hours and delivered at T+7 hours 15 minutes. Reopening SQLite retained the episodes.
 
-En estos recorridos se seleccionó YES/YES como entrada ficticia del operador para demostrar la ruta de entrevista, no como dato aprobado del guion. No se incluyeron esas selecciones como valores por defecto del producto.
+The guided update replayed eight/six history responses for C01/C02, followed by a vital-sign turn and reported examination, then enabled the handoff. Values were stored as crew_reported with unknown observation times. The rendered Python code ran without exceptions in bare mode; the Streamlit health endpoint returned 200. No full visual review was claimed.
 
-El navegador remoto no pudo acceder a la instancia local; **no se verificó visualmente el diseño ni se afirma una revisión interactiva completa de todos los controles**. El servidor arrancó y se ejecutó el código de renderizado sin sesión de navegador. La revisión descrita no equivale a validación clínica, pruebas exhaustivas, rendimiento de MedGemma ni certificación de seguridad.
+## English emergency update
+
+The new safety question wording distinguishes no response from not responding appropriately. A separate deterministic module supplies adult emergency guidance with source references. Both answers must be selected and saved; UNKNOWN blocks the interview, while NO routes to CRITICAL. An emergency recheck does not downgrade that state. See SAFETY_GUIDANCE.md for clinical scope and sources.
+
+Historical records remain in their original language. New episodes should be used for the English demonstration. No live MedGemma inference or validated microgravity treatment is claimed.
+
+A manual walkthrough of the English update recorded NO/YES, YES/NO and NO/NO in separate fictional episodes. All three entered CRITICAL with zero interview turns and selected the corresponding guidance branch. UNKNOWN/YES kept ASSESSMENT with the interview disabled. YES/YES enabled the first question. An unselected breathing answer was rejected and no interview turn was created.
+
+An emergency recheck changed the displayed branch from unresponsive/abnormal breathing to unresponsive/normal breathing while retaining CRITICAL. The next outgoing snapshot contained the new branch. A C02 replay completed after affirmative safety clearance and delivered its initial alert and handoff at T+15 minutes.
+
+The updated English critical screen executed without exceptions in Streamlit bare mode. No full browser visual review was performed.
