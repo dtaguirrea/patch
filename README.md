@@ -1,23 +1,37 @@
-# PATCH · Care beyond Earth
+# PATCH
+## Protocol-Assisted Triage, Communication, and Handoff
 
-PATCH simulates medical assessment and delayed communication during a mission to Mars. It uses fictional cases, Streamlit, SQLite and deterministic control logic. **It is a demonstration, not a clinically validated medical device or a mission-approved emergency protocol.**
+PATCH is a prototype for onboard medical assessment during a simulated Mars mission. It helps crew members record immediate safety checks, collect symptoms and available measurements, respond to an urgent change in condition, and prepare a clinical handoff for Earth.
 
-The entire interface, built-in prompts, case descriptions, new report text and documentation are in English. Previously saved transcripts and packet snapshots retain their original wording; start a **new episode** to demonstrate the English version from the beginning.
+The project demonstrates how structured onboard information gathering can support a crew when communication with a medical team is delayed. Its interface follows a guided sequence, while deterministic rules decide when the interview must pause and emergency guidance must appear.
 
-## Run on Windows (PowerShell)
+**Current MVP:** an English-language Streamlit application with four fictional recorded MedGemma interviews, local SQLite storage, and a simulated communication link. No live LLM connection is required.
 
-Requires Python 3.11 or later. Extract the archive and copy the contents of `patch-dev` into your project, including **all four files in `case_data/` and `emergency_guidance.py`**.
+> Demonstration prototype, not for clinical use. Clinical findings require human review, and onboard emergency procedures require mission-specific validation.
+
+## Features
+
+- Mandatory responsiveness and normal-breathing checks before interviewing.
+- Guided collection of history, reported vital signs, and examination findings.
+- Separate assessment and critical behavior.
+- Predefined emergency guidance based on the crew's safety answers.
+- Structured clinical handoffs with recorded evidence and uncertainties.
+- Simulated message delivery with a 15-minute one-way delay.
+- Persistent episodes, event history, and JSON export.
+
+## Installation
+
+Use Python 3.11 as the reference environment. Run the following commands from the repository root.
+
+### Windows PowerShell
 
 ```powershell
-Set-Location "C:\Users\maind\OneDrive\Escritorio\patch\patch"
-py -3 -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-If `.venv` already exists, skip its creation. Open http://localhost:8501. You do not need to activate the virtual environment. `./start.ps1` is an alternative launcher; if PowerShell blocks scripts, use the commands above without changing system execution policies.
-
-## Run on WSL / Linux / macOS
+### Linux, macOS, or WSL
 
 ```bash
 python3 -m venv .venv
@@ -25,102 +39,169 @@ python3 -m venv .venv
 .venv/bin/python -m streamlit run app.py
 ```
 
-Alternatively, run `bash start.sh`. Initial dependency installation needs package-registry access. After installation, the simulation makes no model/API calls and needs no API keys. Stop the server with Ctrl+C. Use `--server.port 8502` if port 8501 is occupied.
+If a working `.venv` already exists, skip its creation. Open [http://localhost:8501](http://localhost:8501) and stop the server with **Ctrl+C**.
 
-## Mandatory safety check
+The main dependencies are **Streamlit**, **Pydantic**, and **pandas**. The demo requires no API key, GPU, or model download.
 
-Before any interview turn, the operator must explicitly answer and save **both** questions:
+## How PATCH works
 
-1. **Is the person responsive (responds to your voice or a gentle shoulder tap)?**
+An episode begins when the operator selects a demonstration scenario and clicks **Start case →**. PATCH records the opening complaint and automatically creates an initial alert for the simulated Earth link.
+
+The clinical controller uses two states:
+
+| State | Purpose | What the interface shows |
+|---|---|---|
+| `ASSESSMENT` | Collect information and prepare a handoff, subject to the safety checks. | Safety questions, interview, findings, and report. |
+| `CRITICAL` | Pause interviewing and prioritize the local emergency response. | Emergency guidance, reassessment controls, additional findings, and critical handoff actions. |
+
+The normal operating pathway is called `ASSESSMENT` in the code. It describes the application's workflow; it does not mean that the patient has been declared medically well.
+
+### Mandatory safety checks
+
+Before the interview, PATCH asks:
+
+1. **Is the person responsive?**
 2. **Is the person breathing normally (not just gasping)?**
 
-Neither question has a default answer. “No” to question 1 means **no response**, not simply confusion or sleepiness. Choose Unknown if you cannot establish the finding.
+Both answers must be selected and confirmed. Neither is preselected.
 
-| Responses | Application behavior |
+| Confirmed answers | Application behavior |
 |---|---|
-| Either unselected | Confirmation disabled; no interview |
-| YES / YES | Save both answers, then enable the interview |
-| UNKNOWN with no NO | Save the uncertainty, request a check, keep the interview blocked |
-| NO / YES | Critical pathway: unresponsive but breathing normally |
-| YES / NO | Critical pathway: responsive with breathing difficulty |
-| NO / NO | Critical pathway: unresponsive and not breathing normally |
-| NO / UNKNOWN or UNKNOWN / NO | Critical pathway with an urgent reassessment prompt; no invented finding |
+| Both **Yes** | Enables the interview if the episode has not entered `CRITICAL`. |
+| **Unknown** on either question, with no **No** | Keeps the check pending and the interview blocked. The screen asks a crewmate to verify the findings. |
+| **No** on either question | Enters `CRITICAL`, blocks the interview, displays emergency guidance, and creates a priority alert. |
 
-Selecting a NO displays guidance immediately, even before confirmation. Only confirmation persists the answers and performs a state transition. Both recorded replay and the generic mock are gated by the backend as well as the interface.
+The uncertainty option is labeled **Unable to check** or **Not sure**, depending on the demonstration view.
 
-Emergency guidance is deterministic and independent of MedGemma. It distinguishes the three situations above, prioritizes local help, and explains the applicable emergency pathway. It is based on published terrestrial adult first-aid guidance. Spacecraft positioning and resuscitation techniques require mission-approved procedures and clinical review; no microgravity technique is invented here. See [docs/SAFETY_GUIDANCE.md](docs/SAFETY_GUIDANCE.md).
+Selecting **No** immediately previews guidance. Confirming both answers saves the check and applies the critical transition. A “No” in an ordinary history answer does not trigger this rule.
 
-In the critical screen, **Recheck responsiveness and breathing** updates the guidance and sends another critical snapshot. It does not automatically downgrade CRITICAL or restart the interview.
+## Normal operation: ASSESSMENT
 
-## Demo workflow
+Once both safety answers are confirmed as Yes, PATCH permits the guided assessment.
 
-The default screen is designed for a short product walkthrough: case selection, one active clinical step and a compact mission-link panel. The sidebar clearly labels recorded/mock interviews and no live AI. Developer records, saved-case identifiers and raw JSON are hidden behind **Technical details**.
+1. **Collect the history.** The interface displays recorded interview questions and astronaut responses about the presenting complaint.
+2. **Record available findings.** Supplied measurements and examination descriptions become observations when their corresponding answers are saved.
+3. **Review the evidence.** The interface shows the recorded findings and a structured clinical handoff.
+4. **Send the handoff.** The operator submits the report to the simulated communication link.
+5. **Follow delivery.** The link panel shows its transmission status, and the Earth inbox displays it after arrival.
 
-1. Choose **Case 2 · Left flank pain** (the shorter recorded case) or **Case 1 · Abdominal pain**, then click **Start case →**. A new case preserves all previous episodes.
-2. Explicitly select both safety answers and click **Confirm safety check**. Both must be Yes to enter the interview. **Unable to check** is stored as UNKNOWN and keeps the interview blocked.
-3. Follow **Safety → Interview → Vitals → Exam → Handoff**. The active step is highlighted. Read the recorded question and demo answer; click **Use demo answer →** to save that answer and advance. Merely displaying the answer does not record it or send it to Earth.
-4. Review the readable SBAR handoff, then click **Send handoff to Earth →**. An emergency can send a critical update before this normal flow completes.
-5. Use the single **Advance time (+...)** button. By default it reaches the next pending message arrival or scheduled simulation event, falling back to one minute when neither exists. The amount is shown before the click. No timer runs in the background, and advancing time never answers questions.
-6. Watch **Mission link** change from **In transit** to **Received on Earth**. **Earth inbox** contains only delivered snapshots, never current onboard information that has not arrived.
-7. For advanced operation, enable **Technical details**: resume a saved case, choose a fixed time step, inspect/export raw records or close a completed case. These controls are unnecessary for the video.
+The visible stages are **Safety → Interview → Vitals → Exam → Handoff**. In the demo, responses advance with **Use demo answer →** or **Next message**. Displaying an answer preview does not save it as patient evidence.
 
-All four cases use a 15-minute one-way simulation delay. No timed clinical deterioration or link outage is fabricated for these recordings. In Case 4, the change in symptoms is recorded only when its demo answer is saved; advancing time alone cannot trigger it.
+The interview uses recorded MedGemma conversations. It does not generate new answers or diagnoses. Missing measurements remain unavailable, and a reported measurement is not presented as live sensor data.
 
-No free-text reply editing is offered: subsequent recorded questions may depend on the original answers. The catalog contains only the four supplied recordings. Previous scenario fixtures and their special simulation behavior have been removed.
+### If reassessment is needed
 
-See [docs/DEMO_VIDEO.md](docs/DEMO_VIDEO.md) for a short recording sequence.
+A recorded change in condition or **Request urgent review** pauses the interview and requires fresh responsiveness and breathing checks. PATCH also sends an assessment update.
 
-## Included cases — this release contains exactly four
+A reassessment request alone does not enter `CRITICAL`. The confirmed safety answers determine what happens next:
 
-| Case | Recorded sequence | Reported observations |
+- **Yes / Yes:** assessment can continue. If the recording has ended, PATCH opens a partial handoff using the evidence already collected.
+- **Unknown without No:** the safety check remains pending.
+- **Any No:** PATCH enters the critical pathway.
+
+## Critical operation: CRITICAL
+
+When a confirmed safety check contains a No, PATCH immediately changes its behavior:
+
+1. **Stops the interview.** New questions and routine replay answers are blocked.
+2. **Displays the relevant emergency instructions.** Guidance comes from fixed application rules, independently of the interview.
+3. **Creates a priority alert automatically.** The message captures the current state, confirmed checks, recorded findings, conversation, and displayed guidance.
+4. **Keeps follow-up documentation available.** The crew can repeat the safety checks, record additional findings, and send a clinical handoff without finishing the interview.
+
+The interface indicates that the interview is paused and that local emergency response takes priority. The dedicated presentation also shows a **Critical** badge.
+
+Every critical guidance branch begins with:
+
+> Activate the mission emergency response and call a trained crewmate now. Do not wait for an Earth reply.
+
+### What the emergency instructions explain
+
+The following describes the messages implemented in the prototype.
+
+| Confirmed findings | Heading shown | What PATCH displays |
 |---|---|---|
-| C01 · Abdominal pain | 8 history turns, 1 vital-sign turn, 1 examination turn | HR 96 bpm; SpO₂ 98%; localized lower-right abdominal tenderness |
-| C02 · Left flank pain | 6 history turns, 1 vital-sign turn, 1 examination turn | HR 108 bpm; SpO₂ 98%; limited crewmate examination |
-| C03 · Lightheadedness and weakness | 9 history turns, 2 vital-sign turns, 1 examination turn | HR 108 bpm; SpO₂ 98%; BP 108/70 mmHg; respiratory rate 12/min; reported abdominal findings |
-| C04 · Palpitations and a change in condition | 4 history turns, 1 vital-sign turn, then a reported clinical change | HR 96 bpm; SpO₂ 98%; no completed cardiac examination |
+| Unresponsive and not breathing normally | **Unresponsive and not breathing normally** | Treat as suspected cardiac arrest; start CPR following the mission-approved procedure; obtain an AED if available and follow its prompts; continue until qualified responders take over or the mission procedure directs otherwise. Gasping is explicitly identified as abnormal breathing. |
+| Unresponsive but breathing normally | **Unresponsive but breathing normally** | Maintain a clear airway according to training and mission procedures, consider possible injury before moving the person, stay with them, and repeatedly check breathing. Switch to the CPR/AED pathway if normal breathing stops or becomes gasping. |
+| Responsive but not breathing normally | **Responsive with abnormal or difficult breathing** | Help the person adopt a position that makes breathing easier as safely permitted onboard, and monitor responsiveness and breathing. The message states that breathing difficulty alone does not establish cardiac arrest. Switch to the CPR/AED pathway if the person becomes unresponsive and is not breathing normally. |
+| A No with the other finding unknown, or no usable current check during CRITICAL | **Check responsiveness and breathing now** | Activate the emergency response and verify responsiveness and breathing. The screen describes checking response to voice and a gentle shoulder tap while observing breathing, with a 10-second limit on the initial check. CPR/AED instructions are conditional on unresponsiveness together with abnormal breathing. |
 
-The new attachment supplies all four JSON recordings. Answers are retained verbatim, including source spelling; machine phase markers are removed from crew-facing questions. Each normalized case retains the original filename, SHA-256 hash, context and source dialogue indices. The model used for the recordings was `google/medgemma-27b-text-it`; it is not run by this app.
+The guidance includes an adult-simulation scope notice and source links. It does not specify a validated microgravity resuscitation technique. See [Safety guidance](docs/SAFETY_GUIDANCE.md) for the reference sources and clinical-review boundaries.
 
-**Case 4 stops for a second mandatory safety check.** Its final reply reports a new near-fainting episode. The source ends with an unanswered `RECHECK_SUGGESTED`, so the controller pauses the interview and requests both current safety answers. Yes/Yes permits a partial handoff of the available findings. No selects the emergency pathway; unknown keeps the check pending. PATCH does not fabricate a recovery, completed examination, further dialogue or diagnosis. The model text itself never selects CRITICAL.
+### Rechecks, findings, and critical handoffs
 
-The generated report for Case 3 is truncated/unparseable. PATCH does not import any source model report as clinical evidence; it builds a readable deterministic handoff from the recorded dialogue and observations for every case.
+**Recheck responsiveness and breathing** saves updated answers, refreshes the instructions, and automatically sends another critical update.
 
-These recordings provide no demographic records, continuous sensor feed or observation timestamps. Values are saved as `crew_reported` with unknown observation time only after their answer is confirmed. Missing measurements remain unknown. Focused-exam requests in the source exceed its vital-only catalog; they are replayed as historical dialogue, not approved clinical procedures. Case 3's references to standing are likewise preserved as reported language, not a validated microgravity maneuver.
+**Record findings after immediate actions** opens the remaining observation controls. The operator can enter a result, source, quality, and observation time, or explicitly record that a result is unknown or unavailable. These entries are saved locally and included in subsequent outgoing snapshots.
 
-Saved episodes belonging to removed scenarios are filtered out of the UI, including Technical details. They are not physically deleted from an existing SQLite file. A previous active selection outside the new catalog cannot be resumed or cause a catalog lookup crash.
+The crew can send an incomplete but documented handoff through **Send critical update to Earth**, or **Review clinical handoff → Send handoff to Earth**, depending on the view. This manual handoff includes a structured report; it is separate from the automatic priority alert.
 
-## Persistence and updates
+**CRITICAL does not clear automatically.** Even if a later check is Yes / Yes, PATCH keeps the critical state and the interview paused. In that situation it shows reassessment guidance and keeps the emergency response active. Sending a report, receiving it on Earth, or closing an episode does not establish medical recovery.
 
-SQLite is created at `data/patch_mvp.sqlite3`. Episodes, checks, workflow position, transcripts, observations and messages survive a restart. Start a new case to restart the workflow while preserving previous episodes. Override the database path with `PATCH_DB_PATH` if needed.
+Reports already sent remain snapshots. Where available, **Send updated critical handoff** creates a new report containing later findings.
 
-Existing evidence and immutable packets are not translated or rewritten during an update. Older safety checks asked about “responding appropriately”; they are not interpreted as proof of unresponsiveness. The emergency display asks for a new explicit check when it cannot establish the current finding.
+## Clinical handoff
 
-The archive excludes generated databases, virtual environments, credentials and caches. This is a local application without authentication; it is not configured for public hosting or real patient records.
+PATCH builds the handoff locally from recorded evidence using **SBAR**:
 
-## Modules
-
-| File | Responsibility |
+| Section | Contents |
 |---|---|
-| `app.py` | English guided interface, safety questions, emergency display and one clock control |
-| `controller.py` | Transactional commands, safety clearance, workflow, handoff and scheduling |
-| `core_hsm.py` | ASSESSMENT / CRITICAL state transitions |
-| `emergency_guidance.py` | Deterministic response-specific instructions and source links |
-| `contracts.py` | Pydantic data contracts |
-| `config_scenarios.py` | Public profiles and private simulation fixtures |
-| `case_data/` | C01–C04 recorded cases with source filenames, hashes and terminal markers |
-| `llm_anamnesis.py` | Recorded-question replay and generic mock |
-| `space_link_db.py` | SQLite persistence and delayed one-way transport |
+| **Situation** | Presenting complaint and current control state. |
+| **Background** | Available mission and patient context. |
+| **Assessment** | Recorded observations, without automatic diagnostic interpretation. |
+| **Recommendation** | Human medical review; no automated treatment order. |
 
-A future live backend must retain the safety gate, provenance checks and stale-response rejection. Network inference must run outside database write transactions with timeouts/fallback. This release does not claim live MedGemma access or physical cancellation of inference.
+The full report also includes the interview transcript, safety checks, uncertainties, and event timeline. The UI presents either the SBAR sections or a document-style view with the complaint, history, observations, checks, and missing results.
 
-## Git workflow
+Unavailable demographics, measurements, and observation times are not invented. A partial handoff preserves what is known and what remains missing.
 
-Keep **working branch → dev → main**. After copying the complete update, review `git status` and `git diff`, commit the intended files and push your working branch. Include both new code and case data:
+## Communication with Earth
 
-```bash
-git add app.py contracts.py controller.py core_hsm.py emergency_guidance.py config_scenarios.py space_link_db.py llm_anamnesis.py requirements.txt README.md docs case_data .streamlit start.ps1 start.sh .gitignore
-git commit -m "Add English safety-gated assessment and emergency guidance"
-git push -u origin HEAD
-```
+The current scenarios use a **15-minute one-way delay**.
 
-No tests were added or test suites run, as requested. The documented review covers syntax, startup and manual command walkthroughs; it is not clinical validation. See [docs/RESULTS.md](docs/RESULTS.md).
+| Event | Outgoing message |
+|---|---|
+| Start an episode | Initial alert with the complaint and initial context. |
+| Request reassessment outside CRITICAL | Assessment update with the current evidence and pending safety check. |
+| Enter CRITICAL or save a critical recheck | Priority update with the current checks and guidance. |
+| Manually send a handoff | Clinical or critical update with an attached structured report. |
+
+Ordinary interview answers update the onboard record; they do not each create a transmission. Each outgoing message preserves the information available when it was created.
+
+The link panel shows whether messages are **queued**, **in transit**, or **delivered**. The **Earth inbox** contains delivered messages only. Priority messages use the same signal delay as other messages.
+
+**Advance time** normally moves the simulation to the next pending arrival, or forward one minute when no milestone is pending. The dedicated replay also assigns predefined simulated times to selected actions. No wall-clock timer runs between clicks.
+
+The backend supports queuing new messages while the link is unavailable; already transmitted messages still arrive on schedule. The default demo starts with the link up.
+
+The initial alert can include a black-box attachment, but it contains **zero telemetry samples in the supplied recordings**. Reported vital signs are stored separately as observations.
+
+The optional timing comparison is illustrative: its radio-only estimate assumes one question per round trip and immediate answers. It is not a measured performance result. All transmissions and the Earth inbox are local simulations.
+
+## Data and project structure
+
+Episodes, events, observations, and messages are stored in `data/patch_mvp.sqlite3`. Set `PATCH_DB_PATH` before launching the app to choose another database.
+
+Enable **Technical details** to open saved episodes, inspect records, use a fixed clock step, or **Download JSON trace**. After sending a handoff, the operator can close the episode with a required note.
+
+| File or directory | Responsibility |
+|---|---|
+| `app.py` | Main Streamlit interface and shared controls. |
+| `case4_ui.py`, `case4.css`, `replay_click.html` | Dedicated demonstration presentation and replay interaction. |
+| `controller.py` | Application commands, safety enforcement, observations, reports, and simulated time. |
+| `core_hsm.py` | Deterministic assessment/critical state rules. |
+| `emergency_guidance.py` | Safety questions, emergency messages, and reference links. |
+| `config_scenarios.py`, `case_data/` | Recorded demonstration scenarios and source metadata. |
+| `llm_anamnesis.py` | Interview backend abstraction and scripted behavior. |
+| `contracts.py` | Validated data models. |
+| `space_link_db.py` | SQLite storage and simulated message transport. |
+| `requirements.txt` | Runtime dependencies. |
+| `docs/` | Supporting architecture, safety, and demonstration documentation. |
+
+## MVP scope
+
+The current version replays supplied MedGemma interviews and uses deterministic safety rules. It does not include live model inference, real sensor integration, automated diagnosis, prescriptions, or a real flight-surgeon connection.
+
+The clinical state is based on structured checks and events, not general interpretation of symptom text or vital-sign thresholds. The emergency content and examination descriptions require clinical and mission-specific review before any operational use.
+
+Further documentation: [Architecture](docs/ARCHITECTURE.md) · [Safety guidance](docs/SAFETY_GUIDANCE.md) · [Scenario data](docs/SCENARIOS.md).
+
