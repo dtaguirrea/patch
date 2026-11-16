@@ -11,8 +11,9 @@ from contracts import format_met
 from controller import Controller
 from space_link_db import SpaceLinkDB
 from emergency_guidance import guidance_for_answers
+from case4_ui import case4_screen, case4_style
 
-st.set_page_config(page_title="PATCH · Care beyond Earth", page_icon="🛰️", layout="wide")
+st.set_page_config(page_title="PATCH · Care beyond Earth", page_icon="🛰️", layout="wide", initial_sidebar_state="collapsed")
 ROOT = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("PATCH_DB_PATH", str(ROOT / "data" / "patch_mvp.sqlite3")))
 PHASES = ["SAFETY", "HISTORY", "VITALS", "EXAM", "REPORT"]
@@ -312,14 +313,12 @@ def stage_progress(stage):
 
 def main():
     style()
-    st.title("PATCH")
-    st.markdown('<p class="subtitle">Care beyond Earth. Guided onboard assessment, connected to mission support.</p>', unsafe_allow_html=True)
     with SpaceLinkDB(DB_PATH) as db:
         controller = Controller(db)
         with st.sidebar:
             st.markdown('<div class="eyebrow">DEMO CONTROL</div>', unsafe_allow_html=True)
             st.subheader("Choose a case")
-            chosen = st.selectbox("Case", list(CASE_NAMES), format_func=CASE_NAMES.get, label_visibility="collapsed")
+            chosen = st.selectbox("Case", list(CASE_NAMES), index=list(CASE_NAMES).index("C04"), format_func=CASE_NAMES.get, label_visibility="collapsed")
             st.caption(CASE_NOTES[chosen])
             if st.button("Start case →", type="primary", use_container_width=True):
                 act(controller, "start", "start", scenario_id=chosen)
@@ -341,11 +340,14 @@ def main():
                     st.rerun()
             st.caption("Demo mode · fictional cases\n\nRecorded MedGemma interviews · no live AI")
         if not episodes:
+            case4_style()
+            st.title("PATCH")
             with st.container(border=True):
-                st.markdown('<div class="eyebrow">ONBOARD CARE, STEP BY STEP</div>', unsafe_allow_html=True)
-                st.header("Ready when the crew needs it.")
-                st.write("Check immediate safety, gather the story and send a structured handoff to Earth.")
-                st.info("Choose a case in the sidebar, then select Start case.")
+                st.header("Earth is 15 minutes away by radio.")
+                st.write("A crew member reports palpitations. Follow the interview, reassess a change in condition and send the findings to Earth.")
+                if st.button("Start Case 4 · Palpitations", type="primary"):
+                    act(controller, "start", "start", scenario_id="C04")
+                st.caption("Recorded MedGemma interview · simulated mission clock")
             st.caption("Demonstration prototype · not for clinical use.")
             return
         eid = st.session_state["episode_selector"]
@@ -355,6 +357,13 @@ def main():
         workflow = controller.get_workflow(eid)
         stage = workflow["display_stage"]
         packets = db.packets(eid)
+        if ep["scenario_id"] == "C04":
+            case4_screen(controller, ep, workflow, packets, act, next_clock_target, duration,
+                         show_safety_guidance, exam_step, technical)
+            if technical:
+                technical_details(controller, ep)
+            return
+        st.title("PATCH")
         main_col, link_col = st.columns([1.9, 1], gap="large")
         with main_col:
             st.markdown(f'<div class="case-title">{escape(CASE_NAMES[ep["scenario_id"]])}</div>', unsafe_allow_html=True)
