@@ -1,0 +1,147 @@
+{
+  "case_id": "C03",
+  "title": "Lightheadedness and weakness",
+  "recorded_model": "google/medgemma-27b-text-it",
+  "source_file": "patch_case_natural_1794772249711729483.json",
+  "source_sha256": "0f4c8cf5ee1c70a3a51c296b8fbc33df91a79d1dca0afa09eb5b327b6486a305",
+  "opening": "I've felt very lightheaded and weak since yesterday",
+  "original_context": {
+    "CREW_RECORD": {},
+    "MISSION_CONTEXT": "Mars transit",
+    "MEASUREMENTS": [],
+    "EXAM_CATALOG": [
+      "Pulse",
+      "Blood pressure",
+      "Oxygen saturation",
+      "Respiratory rate",
+      "Temperature"
+    ]
+  },
+  "steps": [
+    {
+      "phase": "HISTORY",
+      "question": "Okay, I understand. Let's start gathering information.\n\nWhen did the lightheadedness and weakness begin exactly?",
+      "answer": "It started yesterday morning and has gradually become more noticeable.",
+      "source_dialogue_index": 2,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay. Can you describe the lightheadedness? Is it like you might faint, or more like dizziness?",
+      "answer": "I don't feel like the room is spinning. I feel faint, especially when I get up. But I haven't passed out",
+      "source_dialogue_index": 4,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Understood. You feel faint, particularly when standing up. Have you noticed any other symptoms accompanying the lightheadedness and weakness, such as nausea, headache, shortness of breath, chest pain, or changes in your vision?",
+      "answer": "I've had some mild discomfort in my upper abdomen.\nA little nausea, but I haven't vomited.",
+      "source_dialogue_index": 6,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay, mild upper abdominal discomfort and nausea. Have you had any changes in your bowel movements or urination?",
+      "answer": "No, but my stools have been extrange",
+      "source_dialogue_index": 8,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "What do you mean by \"strange\"? Can you describe the change in your stools?",
+      "answer": "They were almost black, sticky, and had a strong smell.",
+      "source_dialogue_index": 10,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Black, sticky stools with a strong smell. Have you experienced any fever or chills?",
+      "answer": "No",
+      "source_dialogue_index": 12,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay. Have you been able to eat and drink normally, or has your appetite or fluid intake changed?",
+      "answer": "I've been eating normally, although I have less appetite today. And my fluid intake is normal",
+      "source_dialogue_index": 14,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Got it. You have less appetite today but are drinking normally. Have you had any recent injuries or taken any new medications or supplements?",
+      "answer": "No injuries but I took ibuprofen a couple of times this week for headache",
+      "source_dialogue_index": 16,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay, ibuprofen for headache. Do you have any known medical conditions, like diabetes, heart disease, or high blood pressure?",
+      "answer": "No",
+      "source_dialogue_index": 18,
+      "observations": []
+    },
+    {
+      "phase": "VITALS",
+      "question": "Can you provide the most recent available oxygen saturation and heart rate measurements?",
+      "answer": "HR 108 Bbpm\nSpO₂ 98 %",
+      "source_dialogue_index": 20,
+      "observations": [
+        {
+          "metric": "pulse",
+          "value": 108,
+          "unit": "bpm"
+        },
+        {
+          "metric": "spo2",
+          "value": 98,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "phase": "VITALS",
+      "question": "Okay, heart rate is 108 beats per minute and oxygen saturation is 98%. What is the current blood pressure and respiratory rate?",
+      "answer": "108/70 mmHg FR: 12",
+      "source_dialogue_index": 22,
+      "observations": [
+        {
+          "metric": "blood_pressure",
+          "value": "108/70",
+          "unit": "mmHg"
+        },
+        {
+          "metric": "respiratory_rate",
+          "value": 12,
+          "unit": "/min"
+        }
+      ]
+    },
+    {
+      "phase": "EXAM",
+      "question": "Thank you. Blood pressure is 108/70 mmHg and respiratory rate is 12 breaths per minute.\n\nCan you perform a focused abdominal examination, paying attention to tenderness, distension, and bowel sounds?",
+      "answer": "A crewmate examined my abdomen. It's soft, with mild tenderness in the upper middle area, just below my ribs. There's no swelling, rigidity, or severe pain when pressing. Bowel sounds are present and seem normal.",
+      "source_dialogue_index": 24,
+      "observations": [
+        {
+          "metric": "abdomen",
+          "value": "A crewmate examined my abdomen. It's soft, with mild tenderness in the upper middle area, just below my ribs. There's no swelling, rigidity, or severe pain when pressing. Bowel sounds are present and seem normal.",
+          "unit": "description"
+        }
+      ]
+    }
+  ],
+  "completion": "recorded_handoff",
+  "terminal_source": {
+    "source_dialogue_index": 25,
+    "text": "Okay, soft abdomen with mild upper midline tenderness below the ribs, no distension or rigidity, and normal bowel sounds.\n\nEXAM_DONE\nDONE"
+  },
+  "notes": [
+    "Verbatim answers from the supplied recorded conversation; no live inference.",
+    "The attachment supplies no demographics, initial safety answers or measurement times.",
+    "Source questions about focused examinations exceed the supplied vital-only EXAM_CATALOG. They are replayed as historical dialogue, not approved clinical procedures.",
+    "Generated model reports are not used as primary evidence or treatment orders.",
+    "The supplied generated report is incomplete/unparseable. PATCH builds its handoff from the recorded dialogue and observations.",
+    "References to standing/getting up are preserved as recorded statements and are not validated microgravity procedures."
+  ]
+}

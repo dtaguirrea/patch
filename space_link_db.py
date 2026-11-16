@@ -101,7 +101,7 @@ class SpaceLinkDB:
             previous = self.connection.execute("SELECT * FROM commands WHERE command_id=?", (command_id,)).fetchone()
             if previous:
                 if previous["fingerprint"] != fingerprint:
-                    raise ValueError("Identificador de comando reutilizado con otra acción.")
+                    raise ValueError("Command identifier reused for a different action.")
                 return json.loads(previous["result"])
             result = callback()
             self.connection.execute("INSERT INTO commands VALUES(?,?,?)", (command_id, fingerprint, encode(result)))
@@ -117,7 +117,7 @@ class SpaceLinkDB:
     def get_episode(self, episode_id: str) -> dict:
         row = self.connection.execute("SELECT data FROM episodes WHERE episode_id=?", (episode_id,)).fetchone()
         if not row:
-            raise ValueError("El episodio no existe.")
+            raise ValueError("The episode does not exist.")
         return json.loads(row["data"])
 
     def list_episodes(self) -> list[dict]:
