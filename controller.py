@@ -32,12 +32,12 @@ class Controller:
             raise ValueError("Unknown command.")
         fingerprint = hashlib.sha256(json.dumps([action, kwargs], sort_keys=True).encode()).hexdigest()
         def execute():
-            # Optional pacing for the Case 4 replay, atomic with the action it dates.
+            # Optional pacing for recorded case replays, atomic with the action it dates.
             replay_time = kwargs.pop("replay_at", None)
             if replay_time is not None:
                 ep = self._episode(kwargs["episode_id"])
-                if ep["scenario_id"] != "C04" or action not in {"check", "recorded_step", "handoff"}:
-                    raise ValueError("Replay timing is only available for the Case 4 walkthrough.")
+                if not load_scenario(ep["scenario_id"]).get("recorded_case") or action not in {"check", "recorded_step", "handoff"}:
+                    raise ValueError("Replay timing is only available for recorded case walkthroughs.")
                 self.advance_to(ep["episode_id"], max(ep["clock"]["met_seconds"], replay_time))
             return handlers[action](**kwargs)
 

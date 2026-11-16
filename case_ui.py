@@ -1,15 +1,16 @@
-"""Case 4 presentation. Clinical decisions and packets come from the controller."""
+"""Recorded case presentation. Clinical decisions and packets come from the controller."""
 from html import escape
 from pathlib import Path
 
 import streamlit as st
 
+from config_scenarios import SCENARIOS
 from contracts import format_met
 from emergency_guidance import guidance_for_answers
 
 
-def case4_style():
-    css = Path(__file__).with_name("case4.css").read_text(encoding="utf-8")
+def app_style():
+    css = Path(__file__).with_name("case_ui.css").read_text(encoding="utf-8")
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 
@@ -55,12 +56,12 @@ def safety(controller, ep, act, recheck=False, critical=False, suggested=False):
             st.warning("Ask a crewmate to check. The interview remains paused.")
         if st.button("Confirm recheck" if recheck else "Confirm safety check",
                      disabled=None in answers, type="primary"):
-            timing = {} if critical else {"replay_at": 425 if recheck else 20, "defer_question": True}
+            timing = {} if critical else {"replay_at": ep["clock"]["met_seconds"] + 35 if recheck else 20, "defer_question": True}
             act(controller, "critical_check" if critical else "check", prefix,
                 episode_id=ep["episode_id"], consciousness=answers[0], breathing=answers[1], **timing)
 
 
-def report_sheet(summary):
+def report_sheet(summary, title):
     situation = summary["sbar"]["Situation"]
     def rows(values):
         return "".join(f"<li>{escape(str(v))}</li>" for v in values) or "<li>None recorded</li>"
@@ -71,7 +72,7 @@ def report_sheet(summary):
     missing = [u for u in summary["uncertainties"] if u.startswith("No supplied result")]
     state = escape(situation["control_state"]["hsm_state"])
     stamp = "stamp critical-stamp" if state == "CRITICAL" else "stamp"
-    markup(f'<article class="paper"><header>Clinical handoff · Case 4'
+    markup(f'<article class="paper"><header>Clinical handoff · {escape(title)}'
            f'<small>{format_met(summary["generated_at_sim"])}</small></header>'
            f'<b class="{stamp}">{state}</b><h4>Chief complaint</h4><p>{escape(situation["reason"])}</p>'
            f'<h4>History from the interview</h4><ul>{rows(history)}</ul>'
@@ -131,7 +132,7 @@ def link_panel(ep, packets, act, controller, next_target, duration, technical):
                     count = len(p["payload"]["black_box_snapshot"])
                     st.caption(f"Black box · {count} telemetry samples attached")
                 if p["payload"].get("summary"):
-                    report_sheet(p["payload"]["summary"])
+                    report_sheet(p["payload"]["summary"], SCENARIOS[ep["scenario_id"]]["title"])
                 else:
                     st.write(p["payload"]["opening"])
                     st.write(p["payload"]["state"]["reason"])
@@ -175,9 +176,10 @@ def comparison(packet, delay, duration):
                "A flight surgeon could group questions. Both approaches use the same one-way signal delay.")
 
 
-def case4_screen(controller, ep, flow, packets, act, next_target, duration, guidance_view, exam_step, technical):
-    case4_style()
+def case_screen(controller, ep, flow, packets, act, next_target, duration, guidance_view, exam_step, technical):
     eid = ep["episode_id"]
+    title = SCENARIOS[ep["scenario_id"]]["title"]
+    case_label = title.split(" · ")[0]
     stage = flow["display_stage"]
     ctx = controller.get_current_context(eid)
     suggested = flow.get("recording_ended_with_recheck", False)
@@ -190,8 +192,8 @@ def case4_screen(controller, ep, flow, packets, act, next_target, duration, guid
         if st.button("Back to handoff"):
             st.session_state[compare_key] = False
             st.rerun()
-        if st.button("Start Case 4 again"):
-            act(controller, "start", "start", scenario_id="C04")
+        if st.button(f"Start {case_label} again"):
+            act(controller, "start", "start", scenario_id=ep["scenario_id"])
         return
     view_report = stage in ("REPORT", "SENT", "CLOSED") or (stage == "CRITICAL" and st.session_state.get(report_key))
     active = "Handoff" if view_report else {"SAFETY":"Safety","CRITICAL":"Safety","HISTORY":"Interview",
@@ -199,21 +201,23 @@ def case4_screen(controller, ep, flow, packets, act, next_target, duration, guid
     nav = "".join(f'<span class="{"on" if x == active else ""}">{x}</span>'
                   for x in ("Safety","Interview","Vitals","Exam","Handoff"))
     badge = '<b class="critical">Critical</b>' if stage == "CRITICAL" else ""
-    markup(f'<header class="topbar"><b>PATCH</b><nav>{nav}</nav>{badge}'
+    markup(f'<header class="topbar"><b>PATCH</b><small>{escape(case_label)}</small><nav>{nav}</nav>{badge}'
            f'<time>{format_met(ep["clock"]["met_seconds"])}</time></header>')
     left, right = st.columns([2.25,1], gap="large")
     with left:
         if view_report:
-            report_sheet(report["payload"]["summary"] if report else controller.build_handoff(eid))
+            report_sheet(report["payload"]["summary"] if report else controller.build_handoff(eid), title)
             if not report and not ep["closed"] and st.button("Send handoff to Earth", type="primary"):
                 st.session_state[compare_key] = True
-                act(controller, "handoff", "handoff", episode_id=eid, replay_at=480)
+                act(controller, "handoff", "handoff", episode_id=eid, replay_at=ep["clock"]["met_seconds"] + 55)
             if stage == "CRITICAL" and st.button("Return to critical pathway"):
                 st.session_state[report_key] = False
                 st.rerun()
             if report and st.button("Compare communication time", type="primary"):
                 st.session_state[compare_key] = True
                 st.rerun()
+            if stage in ("REPORT", "SENT") and st.button("Request urgent review"):
+                act(controller, "urgent_review", "urgent", episode_id=eid)
         elif stage in ("HISTORY","VITALS","EXAM"):
             dialogue = ctx["dialogue"]
             conversation(dialogue, playback=True)
@@ -230,13 +234,17 @@ def case4_screen(controller, ep, flow, packets, act, next_target, duration, guid
                 if question_visible:
                     act(controller, "recorded_step", f"answer:{eid}:{version}:{index}", episode_id=eid,
                         expected_step=index, expected_version=version, defer_question=True,
-                        replay_at=(70,130,190,250,310,390)[index])
+                        replay_at=70 + 60 * index + (20 if flow["current_step"].get("after_action") == "request_safety_recheck" else 0))
                 else:
                     act(controller, "next_question", f"question:{eid}:{version}:{index}", episode_id=eid)
             if urgent_review:
                 act(controller, "urgent_review", "urgent", episode_id=eid)
             st.caption("Click anywhere in the conversation or on the page background to advance.")
             st.html(Path(__file__).with_name("replay_click.html"), unsafe_allow_javascript=True)
+            if ctx["observations"]:
+                with st.expander("Recorded findings"):
+                    for item in ctx["observations"]:
+                        st.write(f"{item['metric']} · {item['value']} {item['unit']} · {item['source']}")
         else:
             if stage == "SAFETY":
                 if suggested:
@@ -262,4 +270,4 @@ def case4_screen(controller, ep, flow, packets, act, next_target, duration, guid
                     conversation(ctx["dialogue"], changed=suggested)
     with right:
         link_panel(ep, packets, act, controller, next_target, duration, technical)
-    st.caption("Case 4 · recorded MedGemma interview · simulated patient and replay timing · not for clinical use")
+    st.caption(f"{case_label} · recorded MedGemma interview · simulated patient and replay timing · not for clinical use")
