@@ -1,6 +1,6 @@
 {
   "case_id": "C02",
-  "title": "Severe left flank pain",
+  "title": "Left flank pain",
   "recorded_model": "google/medgemma-27b-text-it",
   "source_file": "patch_case_natural_1794755693492205675.json",
   "source_sha256": "aace074501806f0041960f54f0e2b1faebd25d4674aa243b84850478f83efc9f",
@@ -92,10 +92,15 @@
       ]
     }
   ],
+  "completion": "recorded_handoff",
+  "terminal_source": {
+    "source_dialogue_index": 17,
+    "text": "EXAM_DONE\nDONE"
+  },
   "notes": [
-    "Verbatim replay of an exported conversation; no live inference.",
-    "The attachment supplies no demographics, initial safety checks or measurement times.",
-    "The original abdominal request is absent from EXAM_CATALOG: it is replayed as a historical crewmate report, not as an approved clinical procedure.",
-    "The notebook-generated report is not used as evidence; it may contain inferences or inconsistencies."
+    "Verbatim answers from the supplied recorded conversation; no live inference.",
+    "The attachment supplies no demographics, initial safety answers or measurement times.",
+    "Source questions about focused examinations exceed the supplied vital-only EXAM_CATALOG. They are replayed as historical dialogue, not approved clinical procedures.",
+    "Generated model reports are not used as primary evidence or treatment orders."
   ]
 }

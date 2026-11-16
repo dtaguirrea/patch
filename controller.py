@@ -24,7 +24,6 @@ class Controller:
         handlers = {"start": self.start_episode, "check": self.check, "chat": self.chat,
                     "next_question": self.next_question, "advance": self.advance_to,
                     "recheck": self.recheck, "urgent_review": self.urgent_review,
-                    "trigger_deterioration": self.trigger_deterioration,
                     "request_exam": self.request_exam, "record_exam": self.record_exam,
                     "handoff": self.handoff, "set_link": self.set_link,
                     "close": self.close_episode, "recorded_step": self.recorded_step,
@@ -179,6 +178,20 @@ class Controller:
         workflow["step_index"] += 1
         next_stage = case["steps"][workflow["step_index"]]["phase"] if workflow["step_index"] < len(case["steps"]) else "REPORT"
         self._set_phase(ep, next_stage)
+        if step.get("after_action") == "request_safety_recheck":
+            # This curated fixture requests a recheck; recorded model text never
+            # determines CRITICAL. Only the explicit safety answers do that.
+            workflow["recording_ended_with_recheck"] = True
+            self.db.save_episode(ep)
+            suggestion = self._event(ep, "recheck_requested", {
+                "reason": "The recorded crewmate reports a change in condition.",
+                "crew_statement": step["answer"],
+                "source_file": case["source_file"],
+                "terminal_source": case["terminal_source"],
+            }, "recorded_replay")
+            self._transition(ep, suggestion)
+            self._packet(ep, "CLINICAL_UPDATE")
+            return "SAFETY"
         if next_stage != "REPORT":
             self.next_question(episode_id)
         return next_stage
@@ -238,7 +251,7 @@ class Controller:
             "initial_snapshot": [], "handled_schedule": [], "deteriorated": False,
             "closed": False, "report_ready": False, "opening": opening,
             "workflow": {"stage": "HISTORY", "step_index": 0, "observation_start": 0},
-            "configuration_note": "Simulation. Provisional [D] values; manual safety checks."
+            "configuration_note": "Recorded demo case. No live inference or sensor feed; manual safety checks."
         }
         self.db.insert_episode(ep)
         for now in range(-3600, 1, 60):
@@ -386,12 +399,6 @@ class Controller:
             self._sensors(ep, now, force=True)
             if "crew_statement" in item["payload"]:
                 self._event(ep, "crew_statement", {"text": item["payload"]["crew_statement"]}, "crew")
-            if item["type"] == "reassessment_event":
-                obs = Observation(observation_id=uid(), episode_id=ep["episode_id"], patient_id=ep["patient_id"],
-                    metric="temperature", value=39.1, unit="°C", observed_at_sim=now, entered_at_sim=now,
-                    source="crew_reported", provenance="[G] reported statement from the N06 script")
-                self.db.record_observation(obs)
-                self._event(ep, "observation_recorded", obs.model_dump(mode="json"), "crew_reported")
             self.db.save_episode(ep)
             self._transition(ep, event)
         self.db.save_episode(ep)
@@ -424,16 +431,6 @@ class Controller:
             self._transport(ep)
         self._transport(ep)
         return ep["clock"]
-
-    def trigger_deterioration(self, episode_id):
-        ep = self._episode(episode_id)
-        if ep["scenario_id"] != "N04":
-            raise ValueError("Scripted deterioration is available only for N04.")
-        item = load_scenario("N04")["schedule"][0]
-        if item["id"] in ep["handled_schedule"]:
-            return "Deterioration has already been processed."
-        # Use the same clock path as scheduled deterioration, preserving T+2.
-        return self.advance_to(episode_id, max(120, ep["clock"]["met_seconds"]))
 
     def set_link(self, episode_id, status):
         ep = self._episode(episode_id, allow_closed=True)

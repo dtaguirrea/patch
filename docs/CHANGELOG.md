@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-15 · Four supplied recordings only
+
+- Replaced the active catalog with C01–C04 from the latest attachment and removed the retired built-in fixtures.
+- Added Case 3 with its supplied BP/respiratory-rate reply and deterministic handoff despite the source report's parse failure.
+- Added Case 4's explicit terminal safety recheck, without inventing the missing examination or subsequent interview.
+- Filtered existing saved episodes through the active catalog, including fallback from a retired active case.
+- Kept the English presentation UI, mandatory initial checks, fixed emergency instructions and one clock button.
+
+
+## 2026-11-15 · Presentation-focused MVP
+
+- Simplified the default screen to case selection, one guided assessment card and the mission-link panel.
+- Added a five-step progress strip and visible, explicitly unsaved recorded answers for one-click demonstrations.
+- Replaced the default JSON handoff with a readable SBAR; raw evidence remains available under Technical details.
+- Kept both mandatory safety answers, immediate emergency guidance and the backend interview gate.
+- Retained one clock button, now showing the interval to the next arrival or scheduled event. Optional fixed intervals remain available in technical mode.
+- Added a delivery confirmation and delivered-only Earth inbox; no live model or Earth response is simulated as real.
+- Added a short recording guide; no tests were added or executed.
+
+
 ## 2026-11-15 · English interface and emergency pathways
 
 - Translated interface, validation messages, built-in prompts, scenario descriptions, new report text and documentation to English.

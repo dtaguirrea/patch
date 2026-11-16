@@ -36,15 +36,8 @@ class InterviewBackend:
                 question_index=instruction["index"],
                 action_reason="Recorded question replay; no live inference." if instruction["recorded"] else "Generic mock question.")
         answered = sum(1 for item in context["dialogue"] if item["type"] == "patient_message")
-        rechecked = [e for e in context["checks"] if e["t_sim"] >= 21600]
-        if rechecked and context["mission"]["scenario_id"] == "N06" and not any(
-            e["type"] == "patient_message" and e["t_sim"] >= rechecked[-1]["t_sim"] for e in context["dialogue"]
-        ):
-            text = "Compared with the previous assessment, what has changed and what new measurements can you report?"
-            index = -1
-        else:
-            index = min(answered, len(QUESTIONS) - 1)
-            text = QUESTIONS[index]
+        index = min(answered, len(QUESTIONS) - 1)
+        text = QUESTIONS[index]
         return ClinicalAssessmentTurn(
             turn_id=uuid4().hex, episode_id=context["episode_id"], state_version=context["state_version"],
             text=text, next_action="examine" if index == 5 else "ask", question_index=index,

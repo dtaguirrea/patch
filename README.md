@@ -1,4 +1,4 @@
-# PATCH · English guided assessment and emergency pathways
+# PATCH · Care beyond Earth
 
 PATCH simulates medical assessment and delayed communication during a mission to Mars. It uses fictional cases, Streamlit, SQLite and deterministic control logic. **It is a demonstration, not a clinically validated medical device or a mission-approved emergency protocol.**
 
@@ -6,7 +6,7 @@ The entire interface, built-in prompts, case descriptions, new report text and d
 
 ## Run on Windows (PowerShell)
 
-Requires Python 3.11 or later. Extract the archive and copy the contents of `patch-dev` into your project, including **`case_data/` and `emergency_guidance.py`**.
+Requires Python 3.11 or later. Extract the archive and copy the contents of `patch-dev` into your project, including **all four files in `case_data/` and `emergency_guidance.py`**.
 
 ```powershell
 Set-Location "C:\Users\maind\OneDrive\Escritorio\patch\patch"
@@ -52,31 +52,42 @@ Emergency guidance is deterministic and independent of MedGemma. It distinguishe
 
 In the critical screen, **Recheck responsiveness and breathing** updates the guidance and sends another critical snapshot. It does not automatically downgrade CRITICAL or restart the interview.
 
-## Guided workflow
+## Demo workflow
 
-1. Select a case and click **Start a new case**. The initial alert contains only information known at activation.
-2. Complete both safety questions.
-3. Follow **History → Vital signs → Examination → Handoff**. Only the current stage is active.
-4. For Cases 1 and 2, read the question, optionally preview its recorded answer, and click **Record the case answer and continue**. No live MedGemma inference occurs.
-5. At the handoff stage, review the SBAR and click **Generate and send handoff to Earth**. In an emergency, an urgent update is allowed before the normal workflow completes.
-6. Use the single **Advance time** button with **Minutes to advance**. Advancing time does not answer questions or complete stages. It processes all intermediate scenario events and packet arrivals.
-7. Open **Earth · received packets** to inspect delivered snapshots. Download the trace under **Export and case details**.
+The default screen is designed for a short product walkthrough: case selection, one active clinical step and a compact mission-link panel. The sidebar clearly labels recorded/mock interviews and no live AI. Developer records, saved-case identifiers and raw JSON are hidden behind **Technical details**.
 
-No free-text reply editing is offered for recorded cases: subsequent recorded questions may depend on the original answers. The original N02/N04/N06 scenarios still support manual responses to the generic mock.
+1. Choose **Case 2 · Left flank pain** (the shorter recorded case) or **Case 1 · Abdominal pain**, then click **Start case →**. A new case preserves all previous episodes.
+2. Explicitly select both safety answers and click **Confirm safety check**. Both must be Yes to enter the interview. **Unable to check** is stored as UNKNOWN and keeps the interview blocked.
+3. Follow **Safety → Interview → Vitals → Exam → Handoff**. The active step is highlighted. Read the recorded question and demo answer; click **Use demo answer →** to save that answer and advance. Merely displaying the answer does not record it or send it to Earth.
+4. Review the readable SBAR handoff, then click **Send handoff to Earth →**. An emergency can send a critical update before this normal flow completes.
+5. Use the single **Advance time (+...)** button. By default it reaches the next pending message arrival or scheduled simulation event, falling back to one minute when neither exists. The amount is shown before the click. No timer runs in the background, and advancing time never answers questions.
+6. Watch **Mission link** change from **In transit** to **Received on Earth**. **Earth inbox** contains only delivered snapshots, never current onboard information that has not arrived.
+7. For advanced operation, enable **Technical details**: resume a saved case, choose a fixed time step, inspect/export raw records or close a completed case. These controls are unnecessary for the video.
 
-## Included cases
+All four cases use a 15-minute one-way simulation delay. No timed clinical deterioration or link outage is fabricated for these recordings. In Case 4, the change in symptoms is recorded only when its demo answer is saved; advancing time alone cannot trigger it.
 
-| Case | Source and behavior |
-|---|---|
-| C01 · Abdominal pain | Eight recorded history responses, one vital-sign turn (96 bpm / 98%), one reported examination turn |
-| C02 · Severe left flank pain | Six history responses, one vital-sign turn (108 bpm / 98%), one reported examination turn |
-| N02 | Original lightheadedness / gastrointestinal scenario |
-| N04 | Original rash scenario; structured deterioration at T+2 minutes |
-| N06 | Original fever scenario; outage at T+20 minutes, recheck at T+6 hours, link recovery at T+7 hours |
+No free-text reply editing is offered: subsequent recorded questions may depend on the original answers. The catalog contains only the four supplied recordings. Previous scenario fixtures and their special simulation behavior have been removed.
 
-The supplied Case 3 folder was empty. No third case was fabricated. C01/C02 preserve the English dialogue from the supplied JSON recordings. Their questions were originally generated with `google/medgemma-27b-text-it`, but the current application replays them locally.
+See [docs/DEMO_VIDEO.md](docs/DEMO_VIDEO.md) for a short recording sequence.
 
-C01/C02 provide no demographics, historical sensor feed or measurement times. Their reported values appear only when the corresponding answer is saved, with `source=crew_reported` and unknown observation time. The 15-minute one-way delay is a demo setting. Blood pressure, temperature and respiratory rate remain unknown when absent. The historical generated reports are not imported as clinical evidence.
+## Included cases — this release contains exactly four
+
+| Case | Recorded sequence | Reported observations |
+|---|---|---|
+| C01 · Abdominal pain | 8 history turns, 1 vital-sign turn, 1 examination turn | HR 96 bpm; SpO₂ 98%; localized lower-right abdominal tenderness |
+| C02 · Left flank pain | 6 history turns, 1 vital-sign turn, 1 examination turn | HR 108 bpm; SpO₂ 98%; limited crewmate examination |
+| C03 · Lightheadedness and weakness | 9 history turns, 2 vital-sign turns, 1 examination turn | HR 108 bpm; SpO₂ 98%; BP 108/70 mmHg; respiratory rate 12/min; reported abdominal findings |
+| C04 · Palpitations and a change in condition | 4 history turns, 1 vital-sign turn, then a reported clinical change | HR 96 bpm; SpO₂ 98%; no completed cardiac examination |
+
+The new attachment supplies all four JSON recordings. Answers are retained verbatim, including source spelling; machine phase markers are removed from crew-facing questions. Each normalized case retains the original filename, SHA-256 hash, context and source dialogue indices. The model used for the recordings was `google/medgemma-27b-text-it`; it is not run by this app.
+
+**Case 4 stops for a second mandatory safety check.** Its final reply reports a new near-fainting episode. The source ends with an unanswered `RECHECK_SUGGESTED`, so the controller pauses the interview and requests both current safety answers. Yes/Yes permits a partial handoff of the available findings. No selects the emergency pathway; unknown keeps the check pending. PATCH does not fabricate a recovery, completed examination, further dialogue or diagnosis. The model text itself never selects CRITICAL.
+
+The generated report for Case 3 is truncated/unparseable. PATCH does not import any source model report as clinical evidence; it builds a readable deterministic handoff from the recorded dialogue and observations for every case.
+
+These recordings provide no demographic records, continuous sensor feed or observation timestamps. Values are saved as `crew_reported` with unknown observation time only after their answer is confirmed. Missing measurements remain unknown. Focused-exam requests in the source exceed its vital-only catalog; they are replayed as historical dialogue, not approved clinical procedures. Case 3's references to standing are likewise preserved as reported language, not a validated microgravity maneuver.
+
+Saved episodes belonging to removed scenarios are filtered out of the UI, including Technical details. They are not physically deleted from an existing SQLite file. A previous active selection outside the new catalog cannot be resumed or cause a catalog lookup crash.
 
 ## Persistence and updates
 
@@ -96,7 +107,7 @@ The archive excludes generated databases, virtual environments, credentials and 
 | `emergency_guidance.py` | Deterministic response-specific instructions and source links |
 | `contracts.py` | Pydantic data contracts |
 | `config_scenarios.py` | Public profiles and private simulation fixtures |
-| `case_data/` | C01/C02 recorded cases with source filenames and hashes |
+| `case_data/` | C01–C04 recorded cases with source filenames, hashes and terminal markers |
 | `llm_anamnesis.py` | Recorded-question replay and generic mock |
 | `space_link_db.py` | SQLite persistence and delayed one-way transport |
 
