@@ -68,7 +68,7 @@ class ProtocolState(Contract):
     trigger_event_id: str | None = None
     interview_enabled: bool = False
     check_pending: bool = True
-    reason: str = "Pendiente: comprobar conciencia y respiración."
+    reason: str = "Pending: check responsiveness and normal breathing."
 
 
 class Observation(Contract):
@@ -112,10 +112,10 @@ class ClinicalAssessmentTurn(Contract):
     episode_id: str
     state_version: int
     text: str
-    backend: Literal["mock"] = "mock"
+    backend: Literal["mock", "recorded"] = "mock"
     next_action: Literal["ask", "examine", "handoff_ready"] = "ask"
     exam_plan: list[str] = Field(default_factory=list)
-    action_reason: str = "Guion de demostración determinista; no es inferencia clínica."
+    action_reason: str = "Deterministic demo script; not clinical inference."
     assessment_sufficient: bool = False
     problem_summary: str = ""
     new_findings: list[ClinicalFinding] = Field(default_factory=list)
@@ -151,7 +151,7 @@ class EpisodeSummary(Contract):
 
 def format_met(seconds: int | None) -> str:
     if seconds is None:
-        return "Sin registrar"
+        return "Not recorded"
     sign = "+" if seconds >= 0 else "−"
     hours, remainder = divmod(abs(seconds), 3600)
     minutes, sec = divmod(remainder, 60)

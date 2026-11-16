@@ -1,0 +1,120 @@
+{
+  "case_id": "C01",
+  "title": "Abdominal pain",
+  "recorded_model": "google/medgemma-27b-text-it",
+  "source_file": "patch_case_natural_1794754633740743554.json",
+  "source_sha256": "19b170c9f6236ce960a3d6c7a00afc18bd5277e69dc7bc285e8d270e013bf08a",
+  "opening": "I've had stomach pain since this morning",
+  "original_context": {
+    "CREW_RECORD": {},
+    "MISSION_CONTEXT": "Mars transit",
+    "MEASUREMENTS": [],
+    "EXAM_CATALOG": [
+      "Pulse",
+      "Blood pressure",
+      "Oxygen saturation",
+      "Respiratory rate",
+      "Temperature"
+    ]
+  },
+  "steps": [
+    {
+      "phase": "HISTORY",
+      "question": "Okay, I understand. Let's start gathering information.\n\nCan you tell me more about the stomach pain? Where exactly is it located?",
+      "answer": "At first it was around my belly button.\nNow it's mainly in the lower right side of my abdomen.",
+      "source_dialogue_index": 2,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay, the pain started around the belly button and has moved to the lower right side.\n\nWhen did the pain start this morning? What were you doing when it began?",
+      "answer": "It started about eight hours ago",
+      "source_dialogue_index": 4,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay, about eight hours ago.\n\nCan you describe the pain? Is it sharp, dull, cramping, or something else? Is it constant or does it come and go?",
+      "answer": "It's a steady aching pain, not a cramp that comes and goes.",
+      "source_dialogue_index": 6,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "A steady aching pain.\n\nOn a scale of 0 to 10, with 0 being no pain and 10 being the worst pain imaginable, what is the pain level right now? What was it when it started?",
+      "answer": "About six out of ten right now.",
+      "source_dialogue_index": 8,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay, a six out of ten right now.\n\nHave you experienced any nausea, vomiting, diarrhea, or constipation since the pain started?",
+      "answer": "No diarrhea, and I haven't noticed constipation, \t\nI feel nauseated, but I haven't vomited.",
+      "source_dialogue_index": 10,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Nausea, but no vomiting.\n\nHave you had a fever or chills? Do you know your temperature?",
+      "answer": "I haven't felt feverish or had chills. My temperature hasn't been checked yet",
+      "source_dialogue_index": 12,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Okay, no fever or chills reported.\n\nHave you noticed any changes in your appetite or thirst?",
+      "answer": "I've had very little appetite today.",
+      "source_dialogue_index": 14,
+      "observations": []
+    },
+    {
+      "phase": "HISTORY",
+      "question": "Little appetite.\n\nHave you had any recent changes in your diet or fluid intake? Any unusual foods or drinks?",
+      "answer": "No",
+      "source_dialogue_index": 16,
+      "observations": []
+    },
+    {
+      "phase": "VITALS",
+      "question": "Can you provide the most recent available oxygen saturation and heart rate measurements?",
+      "answer": "Heart rate 96 bpm  \nSpO₂ 98%",
+      "source_dialogue_index": 18,
+      "observations": [
+        {
+          "metric": "pulse",
+          "value": 96,
+          "unit": "bpm"
+        },
+        {
+          "metric": "spo2",
+          "value": 98,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "phase": "EXAM",
+      "question": "Okay, heart rate 96 bpm and SpO2 98%.\n\nCan you perform a focused abdominal examination, paying attention to the lower right quadrant?",
+      "answer": "The crewmate reports localized tenderness in the right lower abdomen",
+      "source_dialogue_index": 20,
+      "observations": [
+        {
+          "metric": "abdomen",
+          "value": "The crewmate reports localized tenderness in the right lower abdomen",
+          "unit": "description"
+        }
+      ]
+    }
+  ],
+  "completion": "recorded_handoff",
+  "terminal_source": {
+    "source_dialogue_index": 21,
+    "text": "Okay, localized tenderness in the right lower abdomen.\n\nEXAM_DONE\nDONE"
+  },
+  "notes": [
+    "Verbatim answers from the supplied recorded conversation; no live inference.",
+    "The attachment supplies no demographics, initial safety answers or measurement times.",
+    "Source questions about focused examinations exceed the supplied vital-only EXAM_CATALOG. They are replayed as historical dialogue, not approved clinical procedures.",
+    "Generated model reports are not used as primary evidence or treatment orders."
+  ]
+}
