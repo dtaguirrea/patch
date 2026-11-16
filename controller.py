@@ -31,7 +31,17 @@ class Controller:
         if action not in handlers:
             raise ValueError("Unknown command.")
         fingerprint = hashlib.sha256(json.dumps([action, kwargs], sort_keys=True).encode()).hexdigest()
-        return self.db.execute_command(command_id, fingerprint, lambda: handlers[action](**kwargs))
+        def execute():
+            # Optional pacing for the Case 4 replay, atomic with the action it dates.
+            replay_time = kwargs.pop("replay_at", None)
+            if replay_time is not None:
+                ep = self._episode(kwargs["episode_id"])
+                if ep["scenario_id"] != "C04" or action not in {"check", "recorded_step", "handoff"}:
+                    raise ValueError("Replay timing is only available for the Case 4 walkthrough.")
+                self.advance_to(ep["episode_id"], max(ep["clock"]["met_seconds"], replay_time))
+            return handlers[action](**kwargs)
+
+        return self.db.execute_command(command_id, fingerprint, execute)
 
     def _episode(self, episode_id, *, allow_closed=False):
         ep = self.db.get_episode(episode_id)
@@ -157,7 +167,7 @@ class Controller:
         self._set_phase(ep, "EXAM" if expected_stage == "VITALS" else "REPORT")
         return self._workflow(ep)["stage"]
 
-    def recorded_step(self, episode_id, expected_step, expected_version):
+    def recorded_step(self, episode_id, expected_step, expected_version, defer_question=False):
         ep = self._episode(episode_id)
         self._require_flow(ep, {"HISTORY", "VITALS", "EXAM"})
         case = load_recorded_case(ep["scenario_id"])
@@ -192,7 +202,7 @@ class Controller:
             self._transition(ep, suggestion)
             self._packet(ep, "CLINICAL_UPDATE")
             return "SAFETY"
-        if next_stage != "REPORT":
+        if next_stage != "REPORT" and not defer_question:
             self.next_question(episode_id)
         return next_stage
 
@@ -307,7 +317,7 @@ class Controller:
         self._transport(ep)
         return packet.packet_id
 
-    def check(self, episode_id, consciousness, breathing):
+    def check(self, episode_id, consciousness, breathing, defer_question=False):
         ep = self._episode(episode_id)
         if not ep["state"]["check_pending"]:
             raise ValueError("The safety check has already been recorded. Request a recheck to repeat it.")
@@ -316,7 +326,7 @@ class Controller:
         event = self._event(ep, "initial_check", {"consciousness": consciousness, "breathing": breathing,
             "question_set": QUESTION_SET}, "crew")
         self._transition(ep, event)
-        if ep["state"]["interview_enabled"]:
+        if ep["state"]["interview_enabled"] and not defer_question:
             return self.next_question(episode_id)
         return ep["state"]["reason"]
 

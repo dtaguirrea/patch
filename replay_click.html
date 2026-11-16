@@ -1,0 +1,22 @@
+<script>
+// Streamlit re-renders the view on every turn. Delegate once and use only
+// the active view's Next message button, including its existing state checks.
+(() => {
+  if (window.patchReplayClickInstalled) return;
+  window.patchReplayClickInstalled = true;
+  let submittedTurn;
+  document.addEventListener("click", event => {
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('[data-testid="stMain"]')) return;
+    const marker = document.querySelector('[data-replay-turn]');
+    const button = document.querySelector('.st-key-replay_next button');
+    if (!marker || !button || button.disabled || event.defaultPrevented) return;
+    if (event.button !== 0 || event.detail > 1 || event.ctrlKey || event.metaKey ||
+        event.altKey || event.shiftKey || window.getSelection()?.toString()) return;
+    if (target.closest('button, a, summary, label, input, textarea, select, [contenteditable="true"], [role="button"], .st-key-mission_link')) return;
+    if (submittedTurn === marker.dataset.replayTurn) return;
+    submittedTurn = marker.dataset.replayTurn;
+    button.click();
+  });
+})();
+</script>
